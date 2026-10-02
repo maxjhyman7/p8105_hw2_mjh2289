@@ -1,0 +1,55 @@
+---
+title: "Data Science I (P8105), Homework 2"
+author: "Max Hyman (mjh2289), "
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+##### Load the tidyverse package
+```{r, message = FALSE}
+library(tidyverse)
+```
+
+# Problem 1
+```{r, warning = FALSE, message = FALSE}
+subway_df <- read_csv("Data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
+  janitor::clean_names() |> 
+  select(line, station_name, station_latitude, station_longitude, route1:route11, entrance_type, entry, vending, ada) |> 
+  mutate(
+    entry = case_match(
+    entry,
+    "YES" ~ TRUE,
+    "NO" ~ FALSE
+  )
+)
+
+dim(subway_df)
+```
+
+This dataset providers technical information on every entrance or exit for each subway station in New York City, such as station name, subway line, station longitude and latitude, entrance or exit longitude and latitude, entrance and exit accessibility, station staffing, and more. Nineteen data points on each of the 1868 entrances or exits comprise the clean data. Data cleaning involved removing some variables not relevant to the analysis (e.g., station staffing), and changing the type of one variable from character to logical type. The raw and clean data are tidy because each row represents a single entrance or exit. 
+
+##### How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here. How many stations are ADA compliant? What proportion of station entrances / exits without vending allow entrance?
+
+```{r}
+subway_df |> 
+  distinct(line, station_name)
+
+subway_df |> 
+  distinct(line, station_name, ada) |> 
+  summarize(ada_stations = sum(ada))
+
+subway_df |> 
+  filter(vending == "NO") |> 
+  summarize(
+    n = n(),
+    entry_sum = sum(entry), 
+    entry_mean = mean(entry),
+    exit_sum = n() - sum(entry),
+    exit_mean = 1 - mean(entry)
+    )
+```
+
+There are 465 distinct subway stations in New York City. Of these stations, 84 are ADA compliant. Vending machines are not available at 183 of the 1868 entrances or exits, of which 69 (37.7%) are entrances and 114 (62.3%) are exits.  
+
+# Problem 2
+
