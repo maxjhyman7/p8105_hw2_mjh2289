@@ -5,9 +5,10 @@ date: "`r Sys.Date()`"
 output: github_document
 ---
 
-##### Load the tidyverse package
+##### Load packages
 ```{r, message = FALSE}
 library(tidyverse)
+library(readxl)
 ```
 
 # Problem 1
@@ -29,7 +30,6 @@ dim(subway_df)
 This dataset providers technical information on every entrance or exit for each subway station in New York City, such as station name, subway line, station longitude and latitude, entrance or exit longitude and latitude, entrance and exit accessibility, station staffing, and more. Nineteen data points on each of the 1868 entrances or exits comprise the clean data. Data cleaning involved removing some variables not relevant to the analysis (e.g., station staffing), and changing the type of one variable from character to logical type. The raw and clean data are tidy because each row represents a single entrance or exit. 
 
 ##### How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here. How many stations are ADA compliant? What proportion of station entrances / exits without vending allow entrance?
-
 ```{r}
 subway_df |> 
   distinct(line, station_name)
@@ -51,5 +51,91 @@ subway_df |>
 
 There are 465 distinct subway stations in New York City. Of these stations, 84 are ADA compliant. Vending machines are not available at 183 of the 1868 entrances or exits, of which 69 (37.7%) are entrances and 114 (62.3%) are exits.  
 
+##### Reformat data so that route number and route name are distinct variables. How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?
+```{r}
+subway_df_longer <- subway_df |> 
+  select(station_name, line, ada, route1:route11) |> 
+  mutate(
+    route8 = as.character(route8),
+    route9 = as.character(route9),
+    route10 = as.character(route10),
+    route11 = as.character(route11),
+    ) |> 
+  pivot_longer(
+    cols = c(route1:route11),
+    names_to = "route_number",
+    names_prefix = "route",
+    values_to = "route_name"
+)
+
+subway_df_longer |> 
+  filter(route_name == "A") |> 
+  distinct(station_name, line, ada) |>
+  summarize(
+    stations = n(),
+    ada_stations = sum(ada)
+    )
+```
+
+60 distinct stations serve the A train, of which 17 are ADA compliant. 
+
 # Problem 2
+```{r}
+mr_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
+                            sheet = "Mr. Trash Wheel",
+                            range = "A2:N709") |> 
+  janitor::clean_names() |> 
+  mutate(
+    sports_balls = as.integer(round(sports_balls, 0)),
+    year = as.numeric(year),
+    trash_wheel = "Mr."
+  ) |> 
+  relocate(trash_wheel)
+
+professor_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
+                            sheet = "Professor Trash Wheel",
+                            range = "A2:M134") |> 
+  janitor::clean_names() |> 
+  mutate(
+    trash_wheel = "Professor",
+    year = as.numeric(year),
+  ) |> 
+  relocate(trash_wheel)
+
+gwynnda_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
+                            sheet = "Gwynns Falls Trash Wheel",
+                            range = "A2:L351") |> 
+  janitor::clean_names() |> 
+  mutate(
+    trash_wheel = "Gwynnda"
+  ) |> 
+  relocate(trash_wheel)
+
+trash_wheel_df <- bind_rows(mr_trash_wheel_df, professor_trash_wheel_df, gwynnda_trash_wheel_df)
+```
+
+##### Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in June of 2022?
+
+```{r}
+trash_wheel_df |> 
+  filter(trash_wheel == "Professor") |> 
+  summarize(
+    weight_tons_sum = sum(weight_tons),
+    year_min = min(year), 
+    year_max = max(year)
+  )
+
+trash_wheel_df |> 
+  filter(trash_wheel == "Gwynnda",
+         year == 2022, 
+         month == "June") |> 
+  summarize(cigarette_butts_sum = sum(cigarette_butts))
+
+trash_wheel_df |> 
+  summarize(homes_powered = max(homes_powered, na.rm = TRUE))
+```
+
+The cleaned dataset has `r nrow(trash_wheel_df)` observations describing the trash collected in dumpsters by various named trash wheels in Baltimore, Maryland, including `r nrow(mr_trash_wheel_df)` by "Mr. Trash Wheel," `r nrow(professor_trash_wheel_df)` by "Professor Trash Wheel," and `r nrow(gwynnda_trash_wheel_df)` by "Gwynnda Trash Wheel." Dumpsters are added to these data as they were filled, which is indexed by a date variable. Details about the trash in each filled dumpster is estimated based on periodic measurements taken on the trash wheel conveyor belt. Details about the trash include total trash weight (tons), trash volume (cubic years), and the number of plastic bottles, polystyrene containers, cigarette butts, glass bottles, plastic bags, wrappers, or sports balls collected. Professor Trash Wheel collected 282 tons of trash between 2017 and 2025! Gwynnda Trash Wheel collected 18,120 cigarette butts in June of 2022! Finally, as the collected trash are transported to a waste-to-energy power plant, the dataset includes a variable describing how many Maryland homes were powered from the trash in a dumpster, with one dumpster providing powering to `r pull(mean(homes_powered, na.rm = TRUE))` homes at one point! 
+
+ NEED TO FIX PULL
 
