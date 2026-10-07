@@ -30,7 +30,7 @@ subway_df |>
   dim()
 ```
 
-The raw dataset providers technical information on every entrance or exit for each subway station in New York City, such as station name, subway line, station longitude and latitude, entrance or exit longitude and latitude, entrance and exit accessibility, station staffing, and more. Nineteen data points on each of the 1868 entrances or exits comprise the clean dataset. Data cleaning involved removing some variables not relevant to the analysis (e.g., station staffing), and changing the entry variable from character to logical type. The raw and clean datasets are not tidy because the columns route1-route11 are values for the routes served by each entrance or exit rather than unique variables. 
+The raw dataset providers technical information on every entrance or exit for each subway station in New York City, such as station name, subway line, station longitude and latitude, entrance or exit longitude and latitude, entrance and exit accessibility, station staffing, and more. Nineteen data points on each of the 1868 entrances or exits comprise the clean dataset. Data cleaning involved removing some variables not relevant to the analysis (e.g., station staffing), and changing the entry variable from character to logical type. The raw and clean datasets are not tidy because the columns route1-route11 are values for the routes served by each entrance or exit, not unique variables. 
 
 ##### How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here. How many stations are ADA compliant? What proportion of station entrances / exits without vending allow entrance?
 ```{r}
@@ -87,9 +87,9 @@ subway_df_longer |>
 
 ##### Read and clean the Mr. Trash Wheel sheet: (1) Specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel, (2) Use reasonable variable names, (3) Omit rows that do not include dumpster-specific data, and (4) Round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer). Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine this with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to both datasets before combining.
 ```{r, warning = FALSE, message = FALSE}
-mr_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
+mr_trash_wheel_df <- read_excel("Data/202610 Trash Wheel Collection Data.xlsx", 
                             sheet = "Mr. Trash Wheel",
-                            range = "A2:N709") |> 
+                            range = "A2:N742") |> 
   janitor::clean_names() |> 
   mutate(
     sports_balls = as.integer(round(sports_balls, 0)),
@@ -98,19 +98,19 @@ mr_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx",
   ) |> 
   relocate(trash_wheel)
 
-professor_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
+professor_trash_wheel_df <- read_excel("Data/202610 Trash Wheel Collection Data.xlsx", 
                             sheet = "Professor Trash Wheel",
-                            range = "A2:M134") |> 
+                            range = "A2:M139",
+                            na = c("NA", "dive")) |> 
   janitor::clean_names() |> 
   mutate(
-    trash_wheel = "Professor",
-    year = as.numeric(year),
+    trash_wheel = "Professor"
   ) |> 
   relocate(trash_wheel)
 
-gwynnda_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xlsx", 
-                            sheet = "Gwynns Falls Trash Wheel",
-                            range = "A2:L351") |> 
+gwynnda_trash_wheel_df <- read_excel("Data/202610 Trash Wheel Collection Data.xlsx", 
+                            sheet = "Gwynnda the Good Wheel of the W",
+                            range = "A2:L394") |> 
   janitor::clean_names() |> 
   mutate(
     trash_wheel = "Gwynnda"
@@ -120,7 +120,7 @@ gwynnda_trash_wheel_df <- read_excel("Data/202509 Trash Wheel Collection Data.xl
 trash_wheel_df <- bind_rows(mr_trash_wheel_df, professor_trash_wheel_df, gwynnda_trash_wheel_df)
 ```
 
-One important observation after data cleaning is that the dumpster identifier variable is not unique for "Gwynnda Trash Wheel." Specifically, dumpster 21 is repeated once, although the information for each dumpster 21 observation, including the date, is not duplicated. It is not clear why dumpster 21 is repeated. Perhaps there was a dumpster enumeration error during data collection. Whatever the reason, we should remain mindful of this repeated dumpster identifier in subsequent analysis. 
+An important observation after data cleaning is that the dumpster identifier variable is not unique for "Gwynnda Trash Wheel." Specifically, dumpster 21 is repeated once, although the information for each dumpster 21 observation, including the date, is not duplicated. It is not clear why dumpster 21 is repeated. Perhaps there was a dumpster enumeration error during data collection. Whatever the reason, we should remain mindful of this repeated dumpster identifier in further analysis. Another important observation is that one of the values for the number of plastic bottles collected by "Professor Trash Wheel" is the word "dive." It is not clear what this word means, especially as missingness in that column is alternatively defined with a blank. I interpret "dive" as a missing value upon import, but we should also remain mindful of this data cleaning decision in further analysis. 
 
 ##### Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in June of 2022?
 ```{r}
@@ -142,7 +142,7 @@ trash_wheel_df |>
   summarize(homes_powered = max(homes_powered, na.rm = TRUE))
 ```
 
-The cleaned dataset has `r nrow(trash_wheel_df)` observations describing the trash collected in dumpsters by various named trash wheels in Baltimore, Maryland, including `r nrow(mr_trash_wheel_df)` by "Mr. Trash Wheel," `r nrow(professor_trash_wheel_df)` by "Professor Trash Wheel," and `r nrow(gwynnda_trash_wheel_df)` by "Gwynnda Trash Wheel." Dumpsters are added to these data as they were filled, which is indexed by a date variable. Details about the trash in each filled dumpster is estimated based on periodic measurements taken on the trash wheel conveyor belt. Details about the trash include total trash weight (tons), trash volume (cubic yards), and the number of plastic bottles, polystyrene containers, cigarette butts, glass bottles, plastic bags, wrappers, or sports balls collected. Professor Trash Wheel collected 282 tons of trash between 2017 and 2025! Gwynnda Trash Wheel collected 18,120 cigarette butts in June of 2022! Finally, as the collected trash are transported to a waste-to-energy power plant, the cleaned dataset also includes a variable describing approximately how many Maryland homes were powered from the trash in each dumpster, with the greatest, single dumpster providing power to `r floor(max(pull(trash_wheel_df, homes_powered), na.rm = TRUE))` homes! 
+The cleaned dataset has `r nrow(trash_wheel_df)` observations describing the trash collected in dumpsters by various named trash wheels in Baltimore, Maryland, including `r nrow(mr_trash_wheel_df)` observations from "Mr. Trash Wheel," `r nrow(professor_trash_wheel_df)` observations from "Professor Trash Wheel," and `r nrow(gwynnda_trash_wheel_df)` observations from "Gwynnda Trash Wheel." Dumpsters are added to these data as they were filled, which is indexed by a date variable. Details about the trash in each filled dumpster is estimated based on periodic measurements taken on the trash wheel conveyor belt. Details about the trash include total trash weight (tons), trash volume (cubic yards), and the number of plastic bottles, polystyrene containers, cigarette butts, glass bottles, plastic bags, wrappers, or sports balls collected. Professor Trash Wheel collected 295 tons of trash between January 2017 and March 2026! Gwynnda Trash Wheel collected 18,120 cigarette butts in June 2022! Finally, as the collected trash are transported to a waste-to-energy power plant, the cleaned dataset also includes a variable describing approximately how many Maryland homes were powered from the trash in each dumpster, with the greatest, single dumpster providing power to `r floor(max(pull(trash_wheel_df, homes_powered), na.rm = TRUE))` homes! 
 
 # Problem 3
 
@@ -197,9 +197,9 @@ mci_baseline_df |>
   )
 ```
 
-The dataset derives from an observational study investigating the trajectory of Alzheimer's disease biomarkers. Importing the CSV file at baseline required me skipping over the first row in the file, as that row contained information to describe the data, not data itself. I then recoded the sex and APOE4 binary variables from a numeric 0/1 format to more descriptive character formats ("Female" and "Male" and "Non-carrier" and "Carrier," respectively). Finally, I identified and removed patients with the outcome, Mild Cognitive Impairment (MCI), at baseline because they were never at risk of developing in follow-up. For patients who were ever diagnosed with MCI, their age at onset was included, and I compared that age to their age at baseline. If age at onset was less than or equal to age at baseline, the participant was removed. 
+The dataset derives from an observational study investigating the trajectory of biomarkers associated with Alzheimer's disease. Importing the CSV file at baseline required me skipping over the first row in the file, as that row contained information to describe the data, not data itself. I then recoded the sex and APOE4 carrier status binary variables from a numeric 0/1 format to a more descriptive character format ("Female" and "Male" and "Non-carrier" and "Carrier," respectively). Finally, I identified and removed patients with the outcome, Mild Cognitive Impairment (MCI), at baseline of the study because they were never at risk of developing MCI in follow-up. Specifically, for patients who were ever diagnosed with MCI, their age at onset was included, and I compared their age at onset to their age at baseline. If age at onset was less than or equal to age at baseline, then the participant was removed (4 participants). 
 
-The clean dataset is tidy and includes 479 participants, 93 of whom developed MCI. The average age at baseline was 65.0%, and 210 participants were female. Of the female participants, 30.0% were APOE4 carriers. 
+The clean dataset is tidy and includes 479 participants, 93 of whom developed MCI in follow-up. Baseline demographic and clinical covariates include age, sex, years of education, and APOE4 carrier status. The average age at baseline was 65.0 years, and 210 participants were female. Of the female participants, 30.0% were APOE4 carriers. 
 
 ##### Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
 ```{r, warning = FALSE, message = FALSE}
@@ -218,28 +218,40 @@ mci_amyloid_df <- read_csv("Data/mci_amyloid.csv",
   filter(!is.na(amyloid_ratio))
 
 mci_amyloid_df |> 
+  select(id) |> 
+  n_distinct()
+
+mci_amyloid_df |> 
   dim()
 ```
 
-The other CSV file from the study include an amyloid biomarker measurement associated with Alzheimer's disease. These measurements were taken at baseline and up to four times throughout follow-up. Like the first CSV file, importing the second CSV file are required me skipping over the first row in the file, as that row contained information to describe the data, not data itself. Furthermore, study investigators inconsistently recorded missing values in these data, as "NA" and "Na," such that the import process was amended to include both. Additionally, the identier was named differently from the first dataset ("study_id" instead of "id"), so that was made consistent as well. Finally, the data were not tidy and in wide format, where each of the five biomarker measurements were stored as its own column. After renaming the baseline measurement variable to match the naming convention of the follow-up measurements I transformed the data to long format, where each participant-measurement was now its own observation, and I removed rows in which the measurement was missing. The clean measurement dataset include 487 participants and 2263 biomarker measurements. 
+The other CSV file from the study includes longitudinal measurements of an amyloid biomarker (amyloid-beta 42/40 ratio) associated with Alzheimer's disease. These measurements were taken at baseline and up to four times in follow-up. Like the first CSV file, importing the second CSV file required me skipping over the first row in the file, as that row contained information to describe the data, not data itself. Furthermore, study investigators inconsistently recorded missing values in these data as "NA" and "Na," such that the import process was refined to accommodate both. Additionally, the identifier variable was named differently than in the first dataset ("study_id" versus "id"), so the naming was made consistent as well. Finally, the data were not tidy and in wide format, where each of the five biomarker measurements were stored as its own column. After renaming the baseline measurement variable to match the naming convention of the follow-up measurements, I transformed the data to long format, where each participant-measurement pairing was its own observation, and I removed rows in which the measurement was missing. 
+
+The clean measurement dataset includes 2263 time-indexed biomarker measurements from 487 participants. 
 
 ##### Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 ```{r}
 full_join(mci_baseline_df, mci_amyloid_df, by = "id")  |> 
-  dim()
+  select(id) |> 
+  n_distinct()
 inner_join(mci_baseline_df, mci_amyloid_df, by = "id")  |> 
-  dim()
+  select(id) |> 
+  n_distinct()
 anti_join(mci_baseline_df, mci_amyloid_df, by = "id")  |> 
-  dim()
+  select(id) |> 
+  n_distinct()
 anti_join(mci_amyloid_df, mci_baseline_df, by = "id")  |> 
-  dim()
+  select(id) |> 
+  n_distinct()
 
 mci_df <- inner_join(mci_baseline_df, mci_amyloid_df, by = "id")
+mci_df |> 
+  dim()
 ```
 
 ```{r, eval = FALSE}
 write_csv(mci_df, "Data/mci_analytical.csv") # Not evaluated in .rmd
 ```
 
-There are 471 participants who appear in both datasets, 8 participants who appear in only the first baseline dataset, and 16 participants who appear in only the second measurmeent dataset. Retaining the 471 participants who appear in both datasets, these participants have 2188 biomarker measurements, and the long format of this analytical dataset ("mci_analytical.csv") would be amenable to longitudinally investigation the association between the biomarker measurement and development of MCI. 
+There are 471 participants who appear in both datasets, 8 participants who appear in only the first baseline dataset, and 16 participants who appear in only the second measurement dataset. Retaining the 471 participants who appear in both datasets, these participants have 2188 time-indexed biomarker measurements. The long format of this combined dataset ("mci_analytical.csv") would be amenable to multivariable longitudinal or survival analysis of the association between the biomarker measurement and development of MCI, controlling for baseline demographic and clinical covariates. 
 
